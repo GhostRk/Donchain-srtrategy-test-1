@@ -1,0 +1,53 @@
+//@version=5
+strategy("Donchian Channel Breakout Strategy", overlay=true, process_orders_on_close=true)
+
+// Input variables
+donchianPeriod = input(22, title="Donchian Channel Period")
+atrMultiplier = input(2, title="ATR Multiplier")
+atrPeriod=input(14, title="ATR Period")
+
+// Donchian Channel
+upperBand = ta.highest(high, donchianPeriod)
+lowerBand = ta.lowest(low, donchianPeriod)
+
+// Calculate Average True Range (ATR)
+atrValue = ta.atr(atrPeriod) // You can adjust the ATR period according to your preferences
+
+// Entry condition
+enterLong = close > upperBand[1] and close[1] <= upperBand[1]
+enterShort = close < lowerBand[1] and close[1] >= lowerBand[1]
+
+// Exit conditions
+drawdownLevel = 2 * atrValue
+takeProfitLevel = atrMultiplier * atrValue
+
+// Declare exit variables
+var exitLong = false
+var exitShort = false
+var takeProfitLong = false
+var takeProfitShort = false
+
+// Execute trades
+if (enterLong)
+    strategy.entry("Buy", strategy.long)
+
+if (enterShort)
+    strategy.entry("Sell", strategy.short)
+
+if (strategy.position_size > 0) // Check if long position is open
+    exitLong := close <= close * (1 - drawdownLevel)
+    takeProfitLong := close >= close * (1 + takeProfitLevel)
+    if (exitLong or takeProfitLong)
+        strategy.close("Buy")
+
+if (strategy.position_size < 0) // Check if short position is open
+    exitShort := close >= close * (1 + drawdownLevel)
+    takeProfitShort := close <= close * (1 - takeProfitLevel)
+    if (exitShort or takeProfitShort)
+        strategy.close("Sell")
+
+// Plot entry and exit points
+plotshape(enterLong, title="Long Entry", color=color.green, style=shape.triangleup, location=location.belowbar)
+plotshape(enterShort, title="Short Entry", color=color.red, style=shape.triangledown, location=location.abovebar)
+plotshape(exitLong, title="Exit Long", color=color.yellow, style=shape.arrowdown, location=location.abovebar)
+plotshape(exitShort, title="Exit Short", color=color.orange, style=shape.arrowup, location=location.belowbar)
